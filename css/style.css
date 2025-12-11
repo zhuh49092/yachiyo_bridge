@@ -59,13 +59,13 @@ body {
 
 /* 第一块话题卡片 */
 .topic-1 {
-  top: 16%;
+  top: 12%;
   animation-delay: 0s;
 }
 
 /* 第二块话题卡片 */
 .topic-2 {
-  top: 50%;
+  top: 20%;
   animation-delay: 0.8s;
 }
 
