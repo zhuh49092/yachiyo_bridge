@@ -51,7 +51,7 @@ body {
 /* 公共样式 */
 .topic {
   position: absolute;
-  width: 120%;
+  width: 90%;
   left: 50%;
   transform: translateX(-50%);
   animation: floatY 4s ease-in-out infinite alternate;
