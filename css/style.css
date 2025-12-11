@@ -1,4 +1,4 @@
-/* Reset */
+/* ========== Reset ========== */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -10,112 +10,102 @@ html, body {
   height: 100%;
 }
 
-/* 电脑上让整个竖屏画布居中显示 */
+/* 电脑上让竖屏画布居中 */
 body {
-  background-color: #233220; /* 外围深绿背景 */
+  background-color: #233220; /* 外围深绿背景，可以随便改 */
   display: flex;
-  justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", sans-serif;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI",
+               system-ui, sans-serif;
 }
 
-/* 📌 固定画布=720×1280，严格保持比例 */
+/* ========== 画布区域（固定 720×1280 比例） ========== */
 .page-wrapper {
   position: relative;
-  width: 100%;
-  max-width: 720px;        /* 和你的背景宽度一致 */
-  aspect-ratio: 720 / 1280;
+  width: min(100vw, 720px);     /* 最大宽度 720px，手机上就占满宽度 */
+  aspect-ratio: 720 / 1280;     /* 保持 720x1280 比例 */
   overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  background-color: #000;       /* 背景图加载前的底色 */
 }
 
-/* 背景层：完全贴合画布，不会裁切 */
+/* 背景层：整张插画放这里 */
 .bg-layer {
   position: absolute;
   inset: 0;
-  background-image: url("../assets/bg/splash_bg.png");
-  background-size: 100% 100%;       /* 关键：强制按原比例填满画布 */
-  background-repeat: no-repeat;
+  background-image: url("../assets/bg/splash_bg.png"); /* 换成自己的背景图 */
+  background-size: cover;
   background-position: center;
-  z-index: 1;
+  background-repeat: no-repeat;
 }
 
-/* 主题图层 */
+/* ========== 话题图片 ========== */
 .topics-layer {
   position: absolute;
   inset: 0;
-  z-index: 2;
-  pointer-events: none;
+  pointer-events: none; /* 不挡住下面的 TAP 按钮点击 */
 }
 
-/* 三个卡片基础样式 */
+/* 公共样式 */
 .topic {
   position: absolute;
-  width: 100%;
-  max-width: 650px;
-  animation-name: floatY;
-  animation-duration: 4s;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
+  width: 70%;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: floatY 4s ease-in-out infinite alternate;
 }
 
-/* 📌 精准位置（按 720×1280 比例微调后的版本） */
-
-/* 自然の発見 block */
-.topic-nature {
-  top: 10%;     /* 比例换算后微调过的值 */
-  left: 10%;
+/* 第一块话题卡片 */
+.topic-1 {
+  top: 16%;
   animation-delay: 0s;
 }
 
-/* イベントについて block */
-.topic-event {
-  top: 13%;
-  right: 5%;
-  animation-delay: 0.3s;
+/* 第二块话题卡片 */
+.topic-2 {
+  top: 50%;
+  animation-delay: 0.8s;
 }
 
-/* 周辺やグルメ block */
-.topic-gourmet {
-  top: 16%;
-  left: 13%;
-  animation-delay: 0.6s;
-}
-
-/* 上下轻微浮动动画 */
+/* 上下轻轻浮动的动画 */
 @keyframes floatY {
-  0%   { transform: translateY(0); }
-  25%  { transform: translateY(-4px); }
-  50%  { transform: translateY(0); }
-  75%  { transform: translateY(4px); }
-  100% { transform: translateY(0); }
+  0% {
+    transform: translate(-50%, 0);
+  }
+  100% {
+    transform: translate(-50%, -8px);
+  }
 }
 
-/* TAP PNG 按钮 */
+/* ========== TAP 按钮 ========== */
 .tap-container {
   position: absolute;
-  bottom: 6%;      /* 基于比例调整 */
+  bottom: 5%;
   left: 0;
-  right: 0;
-  text-align: center;
-  z-index: 3;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  pointer-events: auto;
 }
 
 .tap-button-img {
-  width: 100%;
-  max-width: 650px;
+  width: 60%;
+  max-width: 420px;
   cursor: pointer;
-  animation: tapBlink 1.6s ease-in-out infinite;
+  animation: tapBlink 1.4s ease-in-out infinite;
+  transition: transform 0.1s ease-out;
 }
 
-/* TAP 按钮闪烁 */
+/* 轻微闪烁吸引点击 */
 @keyframes tapBlink {
-  0%   { opacity: 0.4; }
-  50%  { opacity: 1; }
-  100% { opacity: 0.4; }
+  0%   { transform: scale(1);    opacity: 1; }
+  50%  { transform: scale(1.03); opacity: 0.9; }
+  100% { transform: scale(1);    opacity: 1; }
 }
 
-/* 点击缩放反馈 */
+/* 点击按下反馈 */
 .tap-button-img:active {
   transform: scale(0.96);
 }
@@ -123,9 +113,10 @@ body {
 /* 手机小屏微调 */
 @media (max-width: 480px) {
   .topic {
-    width: 80%;
+    width: 82%;
   }
+
   .tap-button-img {
-    width: 70%;
+    width: 72%;
   }
 }

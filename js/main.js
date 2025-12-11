@@ -2,11 +2,12 @@
 //  可修改的常量
 // =========================
 
-// ① 你的 Padlet 链接
-const PADLET_URL = "https://padlet.com/zhuh49092/padlet-qwdsdjhu5gjina6n";
+// ① Padlet 链接（八千代用的新画板）
+const PADLET_URL = "https://padlet.com/zhuh49092/padlet-8gnjzav71knt6wtr";
 
 // ② Google Apps Script Web App 的 URL
-const LOG_ENDPOINT = "https://script.google.com/macros/s/AKfycbzc2r3Vl8L6u4pePfMCdesI3ycYGPWLBTWrmjPpAMWRKQ3PqoX8cBt6myxGsgIbGqNM/exec";
+//    部署好 Web App 后，把 URL 填到这里
+const LOG_ENDPOINT = "https://script.google.com/macros/s/AKfycbzS2FKCVSMblSMHGDmpdfWrnVwrPz1VoxberjLlKn6IKX_BLcECt3UIa3wgWC8LXI60Vg/exec";
 
 // ③ 再进入(revisit)的最小间隔（毫秒）
 //    例如：10000 = 10秒；60000 = 1分钟
@@ -17,16 +18,17 @@ const MIN_REVISIT_INTERVAL_MS = 10000;
 //  URL 参数解析
 // =========================
 
-// 入口类型：nfc / qr / newspaper / test / unknown
+// 入口类型：qr / nfc / test / unknown
 function getEntryType() {
   try {
     const params = new URLSearchParams(window.location.search);
     const entryParam = (params.get("entry") || "").toLowerCase();
 
     if (entryParam === "test") {
-      return "test"; // 专用测试模式：完全不记录
+      // 企画者用：完全不记录
+      return "test";
     }
-    if (entryParam === "nfc" || entryParam === "qr" || entryParam === "newspaper") {
+    if (entryParam === "qr" || entryParam === "nfc") {
       return entryParam;
     }
     return "unknown";
@@ -35,36 +37,20 @@ function getEntryType() {
   }
 }
 
-// 角色：organizer / visitor
-function getRoleType() {
+// 钥匙串编号：从 URL 参数 key 中读取（例如 ?entry=qr&key=3）
+function getKeyId() {
   try {
     const params = new URLSearchParams(window.location.search);
-    const roleParam = (params.get("role") || "").toLowerCase();
-
-    if (roleParam === "organizer") {
-      return "organizer";
-    }
-    // 默认视为一般来園者
-    return "visitor";
-  } catch (e) {
-    return "visitor";
-  }
-}
-
-// 报纸ID：从 URL 参数 npid 中读取（例如 ?entry=newspaper&npid=NP01）
-function getNewspaperId() {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const npid = (params.get("npid") || "").trim();
-    return npid;
+    const keyParam = (params.get("key") || "").trim();
+    // 不强制要求一定是数字，但你可以在生成QR时保证是1–20
+    return keyParam;
   } catch (e) {
     return "";
   }
 }
 
-const ENTRY_TYPE    = getEntryType();
-const ROLE_TYPE     = getRoleType();
-const NEWSPAPER_ID  = getNewspaperId();
+const ENTRY_TYPE = getEntryType();
+const KEY_ID     = getKeyId();
 
 
 // =========================
@@ -72,17 +58,21 @@ const NEWSPAPER_ID  = getNewspaperId();
 // =========================
 
 function logEvent(eventType) {
-  // 专用测试模式：?entry=test → 一切不记录
+  // test 模式：完全不记录
   if (ENTRY_TYPE === "test") {
     return;
   }
 
+  // 如果你一开始还没部署 GAS，可以临时关掉
+  if (!LOG_ENDPOINT) {
+    console.warn("LOG_ENDPOINT is empty, skip log:", eventType);
+    return;
+  }
+
   const payload = {
-    client_timestamp: new Date().toISOString(),
-    event_type: eventType,       // "page_view" / "revisit" / "padlet_open"
-    entry_type: ENTRY_TYPE,      // "nfc" / "qr" / "newspaper" / "unknown"
-    role: ROLE_TYPE,             // "organizer" / "visitor"
-    newspaperid: NEWSPAPER_ID    // ★ 报纸ID（非报纸入口时通常为空）
+    event_type: eventType,  // "page_view" / "revisit" / "padlet_open"
+    entry_type: ENTRY_TYPE, // "qr" / "nfc" / "unknown"
+    key_id: KEY_ID          // "1"～"20"（或空字符串）
   };
 
   try {
@@ -107,23 +97,25 @@ function logEvent(eventType) {
 document.addEventListener("DOMContentLoaded", () => {
   const now = Date.now();
 
-  // 1) 页面真正加载时，记一次 page_view
-  logEvent("page_view");
+  // 1) 页面加载时 → 记一次 page_view
+  if (ENTRY_TYPE !== "test") {
+    logEvent("page_view");
+    sessionStorage.setItem("bridge_last_log_time", String(now));
+  }
 
-  // 用 sessionStorage 控制“同一标签页的节流”
-  sessionStorage.setItem("bridge_last_log_time", String(now));
-
-  // 2) 绑定 TAP 按钮（图片）点击事件
+  // 2) TAP 按钮点击 → 记一次 padlet_open，然后跳转 Padlet
   const tapButton = document.getElementById("tapButton");
   if (tapButton) {
-    tapButton.addEventListener("click", (e) => {
-      e.preventDefault();
-      logEvent("padlet_open");
-      window.open(PADLET_URL, "_blank", "noopener");
+    tapButton.addEventListener("click", () => {
+      if (ENTRY_TYPE !== "test") {
+        logEvent("padlet_open");
+      }
+      // 在新标签打开 Padlet
+      window.open(PADLET_URL, "_blank");
     });
   }
 
-  // 3) 监听从后台回到前台 → 统计 revisit
+  // 3) 从后台回到前台 → 统计 revisit
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
       const now = Date.now();
@@ -131,7 +123,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // 距离上一次打点超过设定间隔，才记一次 revisit
       if (!last || now - last >= MIN_REVISIT_INTERVAL_MS) {
-        logEvent("revisit");
+        if (ENTRY_TYPE !== "test") {
+          logEvent("revisit");
+        }
         sessionStorage.setItem("bridge_last_log_time", String(now));
       }
     }
